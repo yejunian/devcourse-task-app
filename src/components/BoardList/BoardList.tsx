@@ -1,8 +1,18 @@
 import clsx from 'clsx';
+import {
+  GoogleAuthProvider,
+  getAuth,
+  signInWithPopup,
+  signOut,
+} from 'firebase/auth';
 import React, { FC, useState } from 'react';
-import { FiPlusCircle } from 'react-icons/fi';
+import { FiLogIn, FiPlusCircle } from 'react-icons/fi';
+import { GoSignOut } from 'react-icons/go';
 
-import { useTypedSelector } from '../../hooks/redux';
+import { firebaseApp } from '../../firebase';
+import { useTypedDispatch, useTypedSelector } from '../../hooks/redux';
+import { useAuth } from '../../hooks/useAuth';
+import { removeUser, setUser } from '../../store/slices/userSlice';
 import {
   addButton,
   addSection,
@@ -22,11 +32,39 @@ const BoardList: FC<TBoardListProps> = ({
   activeBoardId,
   setActiveBoardId,
 }) => {
+  const dispatch = useTypedDispatch();
+
   const { boardArray } = useTypedSelector((state) => state.boards);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
+  const auth = getAuth(firebaseApp);
+  const provider = new GoogleAuthProvider();
+
+  const { isAuth } = useAuth();
+
   const handleClick = () => {
     setIsFormOpen(!isFormOpen);
+  };
+
+  const handleLogin = () => {
+    signInWithPopup(auth, provider)
+      .then((userCredential) => {
+        dispatch(
+          setUser({
+            email: userCredential.user.email ?? '',
+            id: userCredential.user.uid,
+          }),
+        );
+      })
+      .catch((error) => console.error(error));
+  };
+
+  const handleSignOut = () => {
+    signOut(auth)
+      .then(() => {
+        dispatch(removeUser());
+      })
+      .catch((error) => console.error(error));
   };
 
   return (
@@ -59,6 +97,12 @@ const BoardList: FC<TBoardListProps> = ({
           <SideForm setIsFormOpen={setIsFormOpen} />
         ) : (
           <FiPlusCircle className={addButton} onClick={handleClick} />
+        )}
+
+        {isAuth ? (
+          <GoSignOut className={addButton} onClick={handleSignOut} />
+        ) : (
+          <FiLogIn className={addButton} onClick={handleLogin} />
         )}
       </div>
     </div>

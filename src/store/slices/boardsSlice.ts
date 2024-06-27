@@ -37,6 +37,15 @@ type TDeleteTaskAction = {
   taskId: string;
 };
 
+type TReorderAction = {
+  boardIndex: number;
+  droppableIdStart: string;
+  droppableIdEnd: string;
+  droppableIndexStart: number;
+  droppableIndexEnd: number;
+  draggableId: string;
+};
+
 const initialState: TBoardsState = {
   modalActive: false,
   boardArray: [
@@ -186,6 +195,29 @@ const boardsSlice = createSlice({
     setModalActive: (state, { payload }: PayloadAction<boolean>) => {
       state.modalActive = payload;
     },
+
+    reorder: (state, { payload }: PayloadAction<TReorderAction>) => {
+      if (payload.droppableIdStart === payload.droppableIdEnd) {
+        const list = state.boardArray[payload.boardIndex].lists.find(
+          (list) => list.listId === payload.droppableIdStart,
+        );
+
+        const card = list?.tasks.splice(payload.droppableIndexStart, 1);
+        list?.tasks.splice(payload.droppableIndexEnd, 0, ...card!);
+      } else {
+        const sourceList = state.boardArray[payload.boardIndex].lists.find(
+          (list) => list.listId === payload.droppableIdStart,
+        );
+
+        const card = sourceList?.tasks.splice(payload.droppableIndexStart, 1);
+
+        const destinationList = state.boardArray[payload.boardIndex].lists.find(
+          (list) => list.listId === payload.droppableIdEnd,
+        );
+
+        destinationList?.tasks.splice(payload.droppableIndexEnd, 0, ...card!);
+      }
+    },
   },
 });
 
@@ -198,5 +230,6 @@ export const {
   deleteList,
   deleteTask,
   setModalActive,
+  reorder,
 } = boardsSlice.actions;
 export const boardsReducer = boardsSlice.reducer;
